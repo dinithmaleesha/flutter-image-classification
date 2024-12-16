@@ -20,7 +20,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       home: ImageClassification(),
     );
   }
@@ -38,8 +38,8 @@ class _ImageClassificationState extends State<ImageClassification> {
   List<Map<String, dynamic>>? _output;
   late Interpreter interpreter;
   List<String>? labels;
-  int HEIGHT = 224;
-  int WIDTH = 224;
+  int imgHeight = 224;
+  int imgWidth = 224;
   ModelIs modelIs = ModelIs.notReady;
   String command = '';
 
@@ -57,14 +57,14 @@ class _ImageClassificationState extends State<ImageClassification> {
     try {
       setState(() {
         modelIs = ModelIs.loading;
-        command = 'Model is loading';
+        command = 'Model is loading...';
       });
-      await Future.delayed(Duration(seconds: 5));
+      await Future.delayed(const Duration(seconds: 5));
       interpreter = await Interpreter.fromAsset('assets/model/mobilenet_v1_1.0_224.tflite');
       labels = await _loadLabels('assets/model/labels.txt');
       setState(() {
         modelIs = ModelIs.ready;
-        command = 'Pick a Image';
+        command = 'Pick an Image';
       });
     } catch (e) {
       print("Failed to load model: $e");
@@ -98,7 +98,7 @@ class _ImageClassificationState extends State<ImageClassification> {
     });
 
     // Simulate latency
-    await Future.delayed(Duration(seconds: 5));
+    await Future.delayed(const Duration(seconds: 5));
 
     try {
       img.Image? inputImage = img.decodeImage(image.readAsBytesSync());
@@ -154,12 +154,12 @@ class _ImageClassificationState extends State<ImageClassification> {
 
   /// https://github.com/tensorflow/flutter-tflite/issues/249
   List<dynamic> imageToArray(img.Image inputImage) {
-    img.Image resizedImage = img.copyResize(inputImage, width: WIDTH, height: HEIGHT);
+    img.Image resizedImage = img.copyResize(inputImage, width: imgWidth, height: imgHeight);
     List<double> flattenedList = resizedImage.data!.expand((channel) => [channel.r, channel.g, channel.b]).map((value) => value.toDouble()).toList();
     Float32List float32Array = Float32List.fromList(flattenedList);
     int channels = 3;
-    int height = HEIGHT;
-    int width = WIDTH;
+    int height = imgHeight;
+    int width = imgWidth;
     Float32List reshapedArray = Float32List(1 * height * width * channels);
     for (int c = 0; c < channels; c++) {
       for (int h = 0; h < height; h++) {
@@ -170,14 +170,14 @@ class _ImageClassificationState extends State<ImageClassification> {
         }
       }
     }
-    return reshapedArray.reshape([1, WIDTH, HEIGHT, 3]);
+    return reshapedArray.reshape([1, imgWidth, imgHeight, 3]);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Image Classification', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),),
+        title: const Text('Image Classification', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),),
       ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -185,7 +185,7 @@ class _ImageClassificationState extends State<ImageClassification> {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Container(
-              padding: EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(8.0),
               color: Colors.black12.withOpacity(0.05),
               height: MediaQuery.of(context).size.height * 0.5,
               width: MediaQuery.of(context).size.width,
@@ -236,12 +236,12 @@ class _ImageClassificationState extends State<ImageClassification> {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.check_circle, color: Colors.green, size: 20),
-                        SizedBox(width: 8),
+                        const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                        const SizedBox(width: 8),
                         Flexible(
                           child: Text(
                             resultOne,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
                               color: Colors.blue,
@@ -253,8 +253,8 @@ class _ImageClassificationState extends State<ImageClassification> {
                     Divider(color: Colors.blueGrey.withOpacity(0.4), thickness: 1),
                     Row(
                       children: [
-                        Icon(Icons.check_circle_outline, color: Colors.amber, size: 20),
-                        SizedBox(width: 8),
+                        const Icon(Icons.check_circle_outline, color: Colors.amber, size: 20),
+                        const SizedBox(width: 8),
                         Flexible(
                           child: Text(
                             resultTwo,
@@ -270,8 +270,8 @@ class _ImageClassificationState extends State<ImageClassification> {
                     Divider(color: Colors.blueGrey.withOpacity(0.4), thickness: 1),
                     Row(
                       children: [
-                        Icon(Icons.info_outline, color: Colors.redAccent, size: 20),
-                        SizedBox(width: 8),
+                        const Icon(Icons.info_outline, color: Colors.redAccent, size: 20),
+                        const SizedBox(width: 8),
                         Flexible(
                           child: Text(
                             resultThree,
@@ -284,16 +284,29 @@ class _ImageClassificationState extends State<ImageClassification> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Text(
+                        "Disclaimer: The results are predictions and may not be 100% accurate. Please verify if needed.",
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.grey[600],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
           ],
-          Spacer(),
+          const Spacer(),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16.0),
             child: PickImageButton(
-              onPressed: (modelIs != ModelIs.error) ? pickImage : null,
+              onPressed: (modelIs == ModelIs.error) ? null : pickImage,
               isLoading: (modelIs == ModelIs.thinking),
             ),
           ),
