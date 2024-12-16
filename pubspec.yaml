@@ -65,6 +65,7 @@ flutter:
   assets:
     - assets/model/mobilenet_v1_1.0_224.tflite
     - assets/model/labels.txt
+    - assets/image/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
