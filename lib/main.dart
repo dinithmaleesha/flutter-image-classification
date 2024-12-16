@@ -1,8 +1,15 @@
+import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_image_classification/shared_components/custom_button.dart';
+import 'package:flutter_image_classification/shared_components/enum.dart';
 import 'package:flutter_image_classification/shared_components/images.dart';
+import 'package:tflite_flutter/tflite_flutter.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:image/image.dart' as img;
 
 void main() {
   runApp(const MyApp());
@@ -27,15 +34,150 @@ class ImageClassification extends StatefulWidget {
 }
 
 class _ImageClassificationState extends State<ImageClassification> {
-  bool image = true;
-  bool isModelThinking = false;
-  String img = 'assets/image/image.png';
+  File? _image;
+  List<Map<String, dynamic>>? _output;
+  late Interpreter interpreter;
+  List<String>? labels;
+  int HEIGHT = 224;
+  int WIDTH = 224;
+  ModelIs modelIs = ModelIs.notReady;
+  String command = '';
+
+  String resultOne = '';
+  String resultTwo = '';
+  String resultThree = '';
+
+  @override
+  void initState() {
+    super.initState();
+    loadModel();
+  }
+
+  Future<void> loadModel() async {
+    try {
+      setState(() {
+        modelIs = ModelIs.loading;
+        command = 'Model is loading';
+      });
+      await Future.delayed(Duration(seconds: 5));
+      interpreter = await Interpreter.fromAsset('assets/model/mobilenet_v1_1.0_224.tflite');
+      labels = await _loadLabels('assets/model/labels.txt');
+      setState(() {
+        modelIs = ModelIs.ready;
+        command = 'Pick a Image';
+      });
+    } catch (e) {
+      print("Failed to load model: $e");
+      setState(() {
+        modelIs = ModelIs.error;
+        command = 'Failed to load model';
+      });
+    }
+  }
+
+  Future<List<String>> _loadLabels(String path) async {
+    final labelFile = await rootBundle.loadString(path);
+    return labelFile.split('\n');
+  }
+
+  Future<void> pickImage() async {
+    var image = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (image == null) return;
+
+    setState(() {
+      _image = File(image.path);
+    });
+
+    await _classifyImage(_image!);
+  }
+
+  Future<void> _classifyImage(File image) async {
+    setState(() {
+      modelIs = ModelIs.thinking;
+      command = 'Processing the image...';
+    });
+
+    // Simulate latency
+    await Future.delayed(Duration(seconds: 5));
+
+    try {
+      img.Image? inputImage = img.decodeImage(image.readAsBytesSync());
+      if (inputImage == null) {
+        throw Exception("Failed to decode image");
+      }
+
+      // Convert image to Float32List
+      var input = imageToArray(inputImage);
+
+      var output = List.filled(1 * 1001, 0.0).reshape([1, 1001]);
+
+      // Run interpreter
+      interpreter.run(input, output);
+
+      // Process output
+      var probabilities = output[0];
+      var prediction = List<Map<String, dynamic>>.generate(
+        probabilities.length,
+            (i) => {
+          'index': i,
+          'label': labels![i],
+          'confidence': probabilities[i]
+        },
+      );
+
+      prediction.sort((a, b) => b['confidence'].compareTo(a['confidence']));
+
+      setState(() {
+        _output = prediction.sublist(0, 3);
+        resultOne = "It's most likely a ${_output![0]['label']} with a confidence of ${formatConfidence(_output![0]['confidence'] * 100)}.";
+        resultTwo = "The second guess is ${_output![1]['label']} with ${formatConfidence(_output![1]['confidence'] * 100)}.";
+        resultThree = "Lastly, it could be a ${_output![2]['label']} with ${formatConfidence(_output![2]['confidence'] * 100)}.";
+        modelIs = ModelIs.done;
+      });
+    } catch (e) {
+      print("Error during classification: $e");
+      setState(() {
+        modelIs = ModelIs.error;
+        command = "An error occurred during classification. Please try again.";
+      });
+    }
+  }
+
+  String formatConfidence(double confidence) {
+    if (confidence < 1) {
+      return "<1% confidence";
+    }
+    return "${confidence.toStringAsFixed(2)}% confidence";
+  }
+
+
+
+  /// https://github.com/tensorflow/flutter-tflite/issues/249
+  List<dynamic> imageToArray(img.Image inputImage) {
+    img.Image resizedImage = img.copyResize(inputImage, width: WIDTH, height: HEIGHT);
+    List<double> flattenedList = resizedImage.data!.expand((channel) => [channel.r, channel.g, channel.b]).map((value) => value.toDouble()).toList();
+    Float32List float32Array = Float32List.fromList(flattenedList);
+    int channels = 3;
+    int height = HEIGHT;
+    int width = WIDTH;
+    Float32List reshapedArray = Float32List(1 * height * width * channels);
+    for (int c = 0; c < channels; c++) {
+      for (int h = 0; h < height; h++) {
+        for (int w = 0; w < width; w++) {
+          int index = c * height * width + h * width + w;
+          reshapedArray[index] =
+              (float32Array[c * height * width + h * width + w] - 127.5) /127.5;
+        }
+      }
+    }
+    return reshapedArray.reshape([1, WIDTH, HEIGHT, 3]);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Image Classification'),
+        title: Text('Image Classification', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),),
       ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -50,10 +192,9 @@ class _ImageClassificationState extends State<ImageClassification> {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Image
-                  image
-                      ? Image.asset(
-                    img,
+                  _image != null
+                      ? Image.file(
+                    _image!,
                     fit: BoxFit.contain,
                   )
                       : Image.asset(
@@ -61,14 +202,14 @@ class _ImageClassificationState extends State<ImageClassification> {
                     width: 150,
                     fit: BoxFit.contain,
                   ),
-                  if (isModelThinking)
+                  if (modelIs == ModelIs.thinking)
                     Positioned.fill(
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
                         child: Container(),
                       ),
                     ),
-                  if (isModelThinking)
+                  if (modelIs == ModelIs.thinking)
                     Positioned(
                       child: ClipOval(
                         child: Image.asset(ImageAssets.thinking, width: 100,),
@@ -78,37 +219,73 @@ class _ImageClassificationState extends State<ImageClassification> {
               ),
             ),
           ),
-          if(true)
+          if (modelIs != ModelIs.done)
             Text(
-              'Model is thinking...',
+              command,
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.black,
+                color: modelIs == ModelIs.error ? Colors.red : Colors.black,
               ),
             ),
-          if(!isModelThinking) ...[
-            Text(
-              'Line 1',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.greenAccent,
-              ),
-            ),
-            Text(
-              'Line 2',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: Colors.amber,
-              ),
-            ),
-            Text(
-              'Line 3',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.normal,
-                color: Color(0xFFF44336),
+          if (modelIs == ModelIs.done) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Center(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.check_circle, color: Colors.green, size: 20),
+                        SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            resultOne,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.blue,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Divider(color: Colors.blueGrey.withOpacity(0.4), thickness: 1),
+                    Row(
+                      children: [
+                        Icon(Icons.check_circle_outline, color: Colors.amber, size: 20),
+                        SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            resultTwo,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.blue[400],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Divider(color: Colors.blueGrey.withOpacity(0.4), thickness: 1),
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.redAccent, size: 20),
+                        SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            resultThree,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
+                              color: Colors.blue[300],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -116,8 +293,8 @@ class _ImageClassificationState extends State<ImageClassification> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16.0),
             child: PickImageButton(
-              onPressed: () {},
-              isloading: false,
+              onPressed: (modelIs != ModelIs.error) ? pickImage : null,
+              isLoading: (modelIs == ModelIs.thinking),
             ),
           ),
         ],
