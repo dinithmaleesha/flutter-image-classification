@@ -16,7 +16,7 @@ ClassiFy is a Flutter-based image classification app that uses machine learning 
 2. The app processes the image using the MobileNet model.
 3. Get results showing the most probable classification along with confidence percentages.
 
-![App in Action](assets/app-screen.gif)
+<img src="assets/app-screen.gif" alt="App in Action" width="200" />
 
 ## Technologies Used 🤖
 
