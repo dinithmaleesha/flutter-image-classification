@@ -339,7 +339,7 @@ class _ImageClassificationState extends State<ImageClassification> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16.0),
             child: PickImageButton(
-              onPressed: (modelIs == ModelIs.error || modelIs != ModelIs.ready) ? null : pickImage,
+              onPressed: (modelIs == ModelIs.error || modelIs == ModelIs.loading) ? null : pickImage,
               isLoading: (modelIs == ModelIs.thinking),
             ),
           ),
