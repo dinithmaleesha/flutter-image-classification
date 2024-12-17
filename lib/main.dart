@@ -21,6 +21,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
+      debugShowCheckedModeBanner: false,
       home: ImageClassification(),
     );
   }
@@ -150,8 +151,6 @@ class _ImageClassificationState extends State<ImageClassification> {
     return "${confidence.toStringAsFixed(2)}% confidence";
   }
 
-
-
   /// https://github.com/tensorflow/flutter-tflite/issues/249
   List<dynamic> imageToArray(img.Image inputImage) {
     img.Image resizedImage = img.copyResize(inputImage, width: imgWidth, height: imgHeight);
@@ -177,7 +176,41 @@ class _ImageClassificationState extends State<ImageClassification> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Image Classification', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),),
+        title: const Text(
+            'Image Classification', 
+            style: TextStyle(
+                color: Colors.blue, 
+                fontWeight: FontWeight.bold
+            ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline, color: Colors.blue),
+            onPressed: () {
+              showDialog(
+                  context: context, 
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: const Text('About This App'),
+                      content: const Text(
+                        'This app classifies images using machine learning models powered by TensorFlow Lite. '
+                            'It utilizes a pre-trained MobileNet model to analyze images and provides predictions with confidence scores. '
+                            'Simply pick an image and get results with confidence scores.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    );
+                  },
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -306,7 +339,7 @@ class _ImageClassificationState extends State<ImageClassification> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16.0),
             child: PickImageButton(
-              onPressed: (modelIs == ModelIs.error) ? null : pickImage,
+              onPressed: (modelIs == ModelIs.error || modelIs != ModelIs.ready) ? null : pickImage,
               isLoading: (modelIs == ModelIs.thinking),
             ),
           ),
