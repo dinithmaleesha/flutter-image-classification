@@ -264,73 +264,75 @@ class _ImageClassificationState extends State<ImageClassification> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Center(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.check_circle, color: Colors.green, size: 20),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            resultOne,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.blue,
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              resultOne,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.blue,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    Divider(color: Colors.blueGrey.withOpacity(0.4), thickness: 1),
-                    Row(
-                      children: [
-                        const Icon(Icons.check_circle_outline, color: Colors.amber, size: 20),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            resultTwo,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.blue[400],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Divider(color: Colors.blueGrey.withOpacity(0.4), thickness: 1),
-                    Row(
-                      children: [
-                        const Icon(Icons.info_outline, color: Colors.redAccent, size: 20),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            resultThree,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w400,
-                              color: Colors.blue[300],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Text(
-                        "Disclaimer: The results are predictions and may not be 100% accurate. Please verify if needed.",
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontStyle: FontStyle.italic,
-                          color: Colors.grey[600],
-                        ),
-                        textAlign: TextAlign.center,
+                        ],
                       ),
-                    ),
-                  ],
+                      Divider(color: Colors.blueGrey.withOpacity(0.4), thickness: 1),
+                      Row(
+                        children: [
+                          const Icon(Icons.check_circle_outline, color: Colors.amber, size: 20),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              resultTwo,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.blue[400],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Divider(color: Colors.blueGrey.withOpacity(0.4), thickness: 1),
+                      Row(
+                        children: [
+                          const Icon(Icons.info_outline, color: Colors.redAccent, size: 20),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              resultThree,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w400,
+                                color: Colors.blue[300],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Text(
+                          "Disclaimer: The results are predictions and may not be 100% accurate. Please verify if needed.",
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontStyle: FontStyle.italic,
+                            color: Colors.grey[600],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
